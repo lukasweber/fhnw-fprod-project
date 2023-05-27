@@ -2,12 +2,14 @@ import './main.css';
 import { Elm } from './Main.elm';
 import * as serviceWorker from './serviceWorker';
 
-Elm.Main.init({
+const app = Elm.Main.init({
   node: document.getElementById('root')
 });
 
 // Create your WebSocket.
-var socket = new WebSocket('wss://localhost:8080');
+var socket = new WebSocket('ws://localhost:3000');
+
+console.log(app)
 
 // When a command goes to the `sendMessage` port, we pass the message
 // along to the WebSocket.
