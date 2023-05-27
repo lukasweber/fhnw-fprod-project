@@ -4,13 +4,21 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
-import Json.Decode as D
+import Html.Events exposing (..)
+import Json.Decode as Decode exposing (..)
 
+import Canvas exposing (toHtml, shapes, rect)
+import Canvas.Settings exposing (..)
+import Color exposing (..)
+import Html exposing (Html)
+import Html.Attributes exposing (style)
+
+-- PORTS
+port sendMessage : String -> Cmd msg
+port messageReceiver : (String -> msg) -> Sub msg
 
 
 -- MAIN
-
-
 main : Program () Model Msg
 main =
   Browser.element
@@ -21,28 +29,17 @@ main =
     }
 
 
-
-
--- PORTS
-
-
-port sendMessage : String -> Cmd msg
-port messageReceiver : (String -> msg) -> Sub msg
-
-
-
 -- MODEL
-
-
 type alias Model =
-  { draft : String
-  , messages : List String
+  { 
+    points: List (Float, Float),
+    isDrawing: Bool
   }
 
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { draft = "", messages = [] }
+  ( { points = [], isDrawing = False }
   , Cmd.none
   )
 
@@ -50,11 +47,10 @@ init flags =
 
 -- UPDATE
 
-
 type Msg
-  = DraftChanged String
-  | Send
-  | Recv String
+    = StartDrawing
+    | StopDrawing
+    | MouseMove (Float, Float)
 
 
 -- Use the `sendMessage` port when someone presses ENTER or clicks
@@ -62,24 +58,19 @@ type Msg
 -- JS where this is piped into a WebSocket.
 --
 update : Msg -> Model -> ( Model, Cmd Msg )
-update msg model =
+update msg model = 
   case msg of
-    DraftChanged draft ->
-      ( { model | draft = draft }
-      , Cmd.none
-      )
+    StartDrawing ->
+      ({ model | isDrawing = True}, Cmd.none )
 
-    Send ->
-      ( { model | draft = "" }
-      , sendMessage model.draft
-      )
+    StopDrawing ->
+      ({ model | isDrawing = False }, Cmd.none )
 
-    Recv message ->
-      ( { model | messages = model.messages ++ [message] }
-      , Cmd.none
-      )
-
-
+    MouseMove (x, y) ->
+      if model.isDrawing then
+        ({ model | points = (x, y) :: model.points }, Cmd.none )
+      else
+        ( model, Cmd.none )
 
 -- SUBSCRIPTIONS
 
@@ -90,7 +81,7 @@ update msg model =
 --
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-  messageReceiver Recv
+  Sub.none
 
 
 
@@ -100,26 +91,16 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
   div []
-    [ h1 [] [ text "Echo Chat" ]
-    , ul []
-        (List.map (\msg -> li [] [ text msg ]) model.messages)
-    , input
-        [ type_ "text"
-        , placeholder "Draft"
-        , onInput DraftChanged
-        , on "keydown" (ifIsEnter Send)
-        , value model.draft
-        ]
-        []
-    , button [ onClick Send ] [ text "Send" ]
+    [ h1 [] [ text "Thursday Painter" ]
+    , Canvas.toHtml (500, 500)
+            [ style "border" "1px solid black", style "display" "block", style "margin" "0 auto", 
+            onMouseDown StartDrawing, 
+            onMouseUp StopDrawing, 
+            onMouseMove]
+            [ shapes [ fill Color.red ] (List.map (\(x, y) -> rect (x, y) 4 4) model.points) ]
     ]
-
-
-
--- DETECT ENTER
-
-
-ifIsEnter : msg -> D.Decoder msg
-ifIsEnter msg =
-  D.field "key" D.string
-    |> D.andThen (\key -> if key == "Enter" then D.succeed msg else D.fail "some other key")
+onMouseMove : Attribute Msg
+onMouseMove =
+  Html.Events.on "mousemove" (Decode.map2 (\x -> \y -> MouseMove (x, y))
+      (field "offsetX" float)
+      (field "offsetY" float))
