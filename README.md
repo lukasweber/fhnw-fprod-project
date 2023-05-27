@@ -1,4 +1,4 @@
-# Thursday Painter
+# ThursdayPainter
 
 ## Backend
 

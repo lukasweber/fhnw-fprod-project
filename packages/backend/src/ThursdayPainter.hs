@@ -2,7 +2,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module MyLib where
+module ThursdayPainter where
 
 import Protolude
 import qualified Web.Scotty as Sc

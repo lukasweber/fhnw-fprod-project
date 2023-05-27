@@ -1,7 +1,7 @@
 module Main where
 
-import qualified MyLib (main)
+import qualified ThursdayPainter (main)
 
 main :: IO ()
 main = do
-  MyLib.main
+  ThursdayPainter.main
