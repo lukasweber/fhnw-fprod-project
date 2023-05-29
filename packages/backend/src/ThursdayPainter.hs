@@ -34,8 +34,8 @@ wsapp pending = do
   WS.forkPingThread conn 30
 
   (msg :: Text) <- WS.receiveData conn
-  WS.sendTextData conn $ ("initial> " :: Text) <> msg
+  WS.sendTextData conn $ ("echo> " :: Text) <> msg
 
-  forever $ do
-    WS.sendTextData conn $ ("loop data" :: Text)
-    threadDelay $ 1 * 1000000
+  -- forever $ do
+  --   WS.sendTextData conn $ ("loop data" :: Text)
+  --   threadDelay $ 1 * 1000000

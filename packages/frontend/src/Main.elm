@@ -39,8 +39,7 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { points = [], isDrawing = False }
-  , Cmd.none
+  ( { points = [], isDrawing = False }, Cmd.none
   )
 
 
@@ -51,12 +50,9 @@ type Msg
     = StartDrawing
     | StopDrawing
     | MouseMove (Float, Float)
+    | ReceiveWS String
+    | SendWS String
 
-
--- Use the `sendMessage` port when someone presses ENTER or clicks
--- the "Send" button. Check out index.html to see the corresponding
--- JS where this is piped into a WebSocket.
---
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
   case msg of
@@ -71,6 +67,10 @@ update msg model =
         ({ model | points = (x, y) :: model.points }, Cmd.none )
       else
         ( model, Cmd.none )
+    ReceiveWS m ->
+      (model, Cmd.none)
+    SendWS m ->
+      (model, sendMessage m)
 
 -- SUBSCRIPTIONS
 
@@ -81,9 +81,7 @@ update msg model =
 --
 subscriptions : Model -> Sub Msg
 subscriptions _ =
-  Sub.none
-
-
+  messageReceiver ReceiveWS 
 
 -- VIEW
 
@@ -92,6 +90,7 @@ view : Model -> Html Msg
 view model =
   div []
     [ h1 [] [ text "Thursday Painter" ]
+    , button [ onClick (SendWS "Button pressed") ] [ text "Send" ]
     , Canvas.toHtml (500, 500)
             [ style "border" "1px solid black", style "display" "block", style "margin" "0 auto", 
             onMouseDown StartDrawing, 
