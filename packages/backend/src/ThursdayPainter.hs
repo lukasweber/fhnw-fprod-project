@@ -5,37 +5,26 @@
 module ThursdayPainter where
 
 import Protolude
-import qualified Web.Scotty as Sc
-import qualified Data.Text as Txt
-import qualified Network.Wai.Handler.WebSockets as WaiWs
+import Data.Char (isPunctuation, isSpace)
+import Data.Monoid (mappend)
+import Data.Text (Text)
+import Control.Exception (finally)
+import Control.Monad (forM_, forever)
+import Control.Concurrent (MVar, newMVar, modifyMVar_, modifyMVar, readMVar)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T
+
 import qualified Network.WebSockets as WS
-import qualified Network.Wai as Wai
-import qualified Network.Wai.Handler.Warp as Warp
+import qualified WebSocketServer as WebSocketServer
 
 main :: IO ()
 main = do
   let port = 3000
-  let settings = Warp.setPort port Warp.defaultSettings
-  sapp <- scottyApp
-  Warp.runSettings settings $ WaiWs.websocketsOr WS.defaultConnectionOptions wsapp sapp
+  state <- newMVar WebSocketServer.newServerState
+  WS.runServer "127.0.0.1" 3000 $ WebSocketServer.application state
 
-scottyApp :: IO Wai.Application
-scottyApp = 
-  Sc.scottyApp $ do
-    -- Sc.middleware $ Sc.gzip $ Sc.def
 
-    Sc.get "/" $
-      Sc.file "index.html"
 
-wsapp :: WS.ServerApp
-wsapp pending = do
-  putText "ws connected"
-  conn <- WS.acceptRequest pending
-  WS.forkPingThread conn 30
 
-  (msg :: Text) <- WS.receiveData conn
-  WS.sendTextData conn $ ("echo> " :: Text) <> msg
 
-  -- forever $ do
-  --   WS.sendTextData conn $ ("loop data" :: Text)
-  --   threadDelay $ 1 * 1000000
+
