@@ -1,6 +1,7 @@
 port module Main exposing (..)
 
 import Browser
+import Debug exposing (toString)
 import Html exposing (..)
 import Html.Attributes exposing (..)
 import Html.Events exposing (..)
@@ -33,13 +34,14 @@ main =
 type alias Model =
   { 
     points: List (Float, Float),
-    isDrawing: Bool
+    isDrawing: Bool,
+    username: String
   }
 
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { points = [], isDrawing = False }, Cmd.none
+  ( { points = [], isDrawing = False, username = "" }, Cmd.none
   )
 
 
@@ -52,6 +54,7 @@ type Msg
     | MouseMove (Float, Float)
     | ReceiveWS String
     | SendWS String
+    | UpdateUsername String
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
@@ -64,13 +67,29 @@ update msg model =
 
     MouseMove (x, y) ->
       if model.isDrawing then
-        ({ model | points = (x, y) :: model.points }, Cmd.none )
+        ({ model | points = (x, y) :: model.points }, sendMessage (toString x ++ "," ++ toString y))
       else
         ( model, Cmd.none )
     ReceiveWS m ->
-      (model, Cmd.none)
+      ({model | points = convertToPoint m :: model.points}, Cmd.none)
     SendWS m ->
       (model, sendMessage m)
+    UpdateUsername m ->
+      ({model | username = m}, Cmd.none)
+
+convertToPoint : String -> (Float, Float)
+convertToPoint s =
+  case String.split "," s of
+    [x, y] ->
+      (convertStringToFloat x, convertStringToFloat y)
+    _ ->
+      (0, 0)
+
+convertStringToFloat : String -> Float
+convertStringToFloat s =
+  case String.toFloat s of
+    Just f -> f
+    Nothing -> 0
 
 -- SUBSCRIPTIONS
 
@@ -78,7 +97,7 @@ update msg model =
 -- Subscribe to the `messageReceiver` port to hear about messages coming in
 -- from JS. Check out the index.html file to see how this is hooked up to a
 -- WebSocket.
---
+
 subscriptions : Model -> Sub Msg
 subscriptions _ =
   messageReceiver ReceiveWS 
@@ -90,7 +109,8 @@ view : Model -> Html Msg
 view model =
   div []
     [ h1 [] [ text "Thursday Painter" ]
-    , button [ onClick (SendWS "Button pressed") ] [ text "Send" ]
+    , input [ type_ "text", placeholder "Enter your name", onInput UpdateUsername ] []
+    , button [ onClick (SendWS model.username) ] [ text "Start" ]
     , Canvas.toHtml (500, 500)
             [ style "border" "1px solid black", style "display" "block", style "margin" "0 auto", 
             onMouseDown StartDrawing, 
