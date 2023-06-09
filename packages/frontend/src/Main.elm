@@ -68,11 +68,14 @@ update msg model =
 
     MouseMove (x, y) ->
       if model.isDrawing then
-        ({ model | points = (x, y) :: model.points }, sendMessage (toString x ++ "," ++ toString y))
+        ({ model | points = (x, y) :: model.points }, sendMessage ("D:" ++ toString x ++ "," ++ toString y))
       else
         ( model, Cmd.none )
     ReceiveWS m ->
-      ({model | points = convertToPoint m :: model.points}, Cmd.none)
+      if String.startsWith "D:" m then
+        ({model | points = convertToPoint (String.dropLeft 2 m) :: model.points}, Cmd.none)
+      else
+        (model, Cmd.none)
     SendWS m ->
       (model, sendMessage m)
     UpdateUsername m ->
