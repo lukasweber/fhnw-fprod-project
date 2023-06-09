@@ -32,7 +32,8 @@ main =
 
 -- MODEL
 type alias Model =
-  { 
+  {
+    isInit : Bool,
     points: List (Float, Float),
     isDrawing: Bool,
     username: String
@@ -41,9 +42,8 @@ type alias Model =
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { points = [], isDrawing = False, username = "" }, Cmd.none
+  ( { points = [], isDrawing = False, username = "", isInit = True}, Cmd.none
   )
-
 
 
 -- UPDATE
@@ -55,6 +55,7 @@ type Msg
     | ReceiveWS String
     | SendWS String
     | UpdateUsername String
+    | JoinGame
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model = 
@@ -76,6 +77,9 @@ update msg model =
       (model, sendMessage m)
     UpdateUsername m ->
       ({model | username = m}, Cmd.none)
+    JoinGame ->
+      ({ model | isInit = False }, sendMessage model.username)
+      
 
 convertToPoint : String -> (Float, Float)
 convertToPoint s =
@@ -108,16 +112,51 @@ subscriptions _ =
 view : Model -> Html Msg
 view model =
   div []
-    [ h1 [] [ text "Thursday Painter" ]
-    , input [ type_ "text", placeholder "Enter your name", onInput UpdateUsername ] []
-    , button [ onClick (SendWS model.username) ] [ text "Start" ]
-    , Canvas.toHtml (500, 500)
-            [ style "border" "1px solid black", style "display" "block", style "margin" "0 auto", 
+    [ h1 [ class "logo"] [ text "Thursday Painter" ]
+    ,
+      if model.isInit then
+        viewInitScreen model
+      else
+        viewDrawScreen model
+    ]
+
+viewDrawScreen : Model -> Html Msg
+viewDrawScreen model = div [ class "container"] [
+    viewDrawCanvas model 
+    , viewControls model
+  ]
+
+viewDrawCanvas : Model -> Html Msg
+viewDrawCanvas model = Canvas.toHtml (500, 500)
+            [ class "shadow-box", 
             onMouseDown StartDrawing, 
             onMouseUp StopDrawing, 
             onMouseMove]
             [ shapes [ fill Color.red ] (List.map (\(x, y) -> rect (x, y) 4 4) model.points) ]
+
+viewInitScreen : Model -> Html Msg
+viewInitScreen model = div [ class "container"] [
+    div [ class "shadow-box colored-box init-screen" ] [
+      h1 [] [ text "Hi!" ]
+      , p [] [ text "Please enter your name to start." ]
+      , input [ type_ "text", placeholder "Enter your name", onInput UpdateUsername ] []
+      , button [ onClick JoinGame, class "btn", disabled (model.username == "") ] [ text "Start" ] 
     ]
+  ]
+
+viewControls : Model -> Html Msg
+viewControls model = div [ class "controls-container" ] [
+        label [] [ text "Name" ]
+        , span [ class "name-display", style "margin-bottom" "20px" ] [ text model.username ]
+        , label [] [ text "Role" ]
+        , div [ class "role-display" ] [
+          span [ class "active "] [ text "Drawer" ]
+          , span [] [ text "Guesser" ]
+        ]
+        , label [] [ text "Word" ]
+        , span [ class "word-display" ] [ text "Cat" ]
+       ]
+      
 onMouseMove : Attribute Msg
 onMouseMove =
   Html.Events.on "mousemove" (Decode.map2 (\x -> \y -> MouseMove (x, y))
