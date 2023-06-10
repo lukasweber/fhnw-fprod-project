@@ -9,11 +9,11 @@ import Control.Monad.Random
 import System.Random()
 import qualified Network.WebSockets as WS
 
--- Username, IsDrawer, Connection
 type Client = (Text, WS.Connection)
 data ServerState = ServerState
   { clients :: [Client]
   , currentWord :: Text
+  , drawer :: Client
   }
 
 type Point = (Int, Int)
@@ -23,7 +23,7 @@ data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | Choose
 possibleWords :: [Text]
 possibleWords = ["apple", "banana", "orange", "pear", "grape", "pineapple", "strawberry", "blueberry", "raspberry", "blackberry", "mango", "watermelon", "melon", "cherry", "peach", "plum", "kiwi", "lemon", "lime", "coconut", "papaya", "apricot", "avocado", "fig", "grapefruit", "guava", "lychee", "nectarine", "olive", "pomegranate", "tangerine", "tomato", "cantaloupe", "dragonfruit", "durian", "jackfruit", "kumquat", "mangosteen", "persimmon", "quince", "rhubarb", "starfruit", "ugli fruit", "breadfruit", "carambola", "cherimoya", "custard apple", "date", "elderberry", "goji berry", "gooseberry", "honeydew", "loquat", "mulberry", "passion fruit", "plantain", "pomelo", "prickly pear", "quandong", "salak", "soursop", "tamarind", "ugni", "yuzu", "zucchini"]
 
-chooseWord :: (MonadRandom m) => m (Text)
+chooseWord :: (MonadRandom m) => m Text
 chooseWord = do
   let n = length possibleWords
   i <- getRandomR (0, n - 1)
@@ -31,8 +31,16 @@ chooseWord = do
     (x:_) -> return x
     []    -> return ""
 
+electDrawer :: (MonadRandom m) => ServerState -> m Client
+electDrawer st = do
+  let n = length (clients st)
+  i <- getRandomR (0, n - 1)
+  case drop i (clients st) of
+    (x:_) -> return x
+    []    -> return ("", undefined)
+
 newServerState :: ServerState
-newServerState = ServerState [] ""
+newServerState = ServerState [] "" ("", undefined)
 
 numClients :: ServerState -> Int
 numClients = length . clients
@@ -68,16 +76,17 @@ application st pending = do
       msg <- WS.receiveData conn
       let client = (msg, conn)
 
-      -- print client name
-      putStrLn $ "Client name: " <> fst client
-
       -- The first message that we expect from a client is their name.
       -- After the first contact, we start listening for delta updates
       -- to the canvas.
       readMVar st >>= broadcast (createMessage JoinGame (fst client))
       modifyMVar_ st $ \s -> return $ addClient client s
 
-      readMVar st >>= \s -> WS.sendTextData conn (createMessage ChooseWord (currentWord s))
+      readMVar st >>= \s -> do
+        when (numClients s >= 2) $ do
+          electedUser <- electDrawer s
+          broadcast (createMessage ElectedUser (fst electedUser)) s
+          WS.sendTextData (snd electedUser) (createMessage ChooseWord (currentWord s))
       
       talk client st `finally` do
         readMVar st >>= broadcast (createMessage LeftGame (fst client))
