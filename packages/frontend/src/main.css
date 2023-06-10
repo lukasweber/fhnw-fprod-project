@@ -148,3 +148,19 @@ input {
   .drawer-name {
     font-weight: bold;
   }
+
+.member-list {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 20px;
+  max-width: 200px;
+  flex-wrap: wrap;
+}
+
+  .member-list span {
+    background-color: #385170;
+    color: white;
+    border-radius: 30px;
+    padding: 8px;
+  }
