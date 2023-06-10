@@ -88,7 +88,8 @@ application st pending = do
         let users = filter ((/= fst client) . fst) (clients s)
         let usernames = map fst users
 
-        WS.sendTextData conn (createMessage CurrentUsers (T.intercalate "," usernames))
+        unless (null usernames) $ do
+          WS.sendTextData conn (createMessage CurrentUsers (T.intercalate "," usernames))
 
         when (numClients s >= 2) $ do
           electedUser <- electDrawer s
