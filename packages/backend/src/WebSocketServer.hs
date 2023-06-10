@@ -8,6 +8,8 @@ import Protolude
 import Control.Monad.Random
 import System.Random()
 import qualified Network.WebSockets as WS
+import qualified Data.Text as T
+
 
 type Client = (Text, WS.Connection)
 data ServerState = ServerState
@@ -18,7 +20,7 @@ data ServerState = ServerState
 
 type Point = (Int, Int)
 type Points = [Point]
-data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord deriving (Eq,Ord,Enum,Show)
+data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers deriving (Eq,Ord,Enum,Show)
 
 possibleWords :: [Text]
 possibleWords = ["apple", "banana", "orange", "pear", "grape", "pineapple", "strawberry", "blueberry", "raspberry", "blackberry", "mango", "watermelon", "melon", "cherry", "peach", "plum", "kiwi", "lemon", "lime", "coconut", "papaya", "apricot", "avocado", "fig", "grapefruit", "guava", "lychee", "nectarine", "olive", "pomegranate", "tangerine", "tomato", "cantaloupe", "dragonfruit", "durian", "jackfruit", "kumquat", "mangosteen", "persimmon", "quince", "rhubarb", "starfruit", "ugli fruit", "breadfruit", "carambola", "cherimoya", "custard apple", "date", "elderberry", "goji berry", "gooseberry", "honeydew", "loquat", "mulberry", "passion fruit", "plantain", "pomelo", "prickly pear", "quandong", "salak", "soursop", "tamarind", "ugni", "yuzu", "zucchini"]
@@ -83,6 +85,11 @@ application st pending = do
       modifyMVar_ st $ \s -> return $ addClient client s
 
       readMVar st >>= \s -> do
+        let users = filter ((/= fst client) . fst) (clients s)
+        let usernames = map fst users
+
+        WS.sendTextData conn (createMessage CurrentUsers (T.intercalate "," usernames))
+
         when (numClients s >= 2) $ do
           electedUser <- electDrawer s
           broadcast (createMessage ElectedUser (fst electedUser)) s
@@ -119,3 +126,4 @@ getMessageTypeShort Draw = "D"
 getMessageTypeShort ChooseWord = "C"
 getMessageTypeShort WordGuess = "G"
 getMessageTypeShort ElectedUser = "E"
+getMessageTypeShort CurrentUsers = "U"
