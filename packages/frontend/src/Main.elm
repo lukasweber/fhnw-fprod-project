@@ -13,6 +13,8 @@ import Canvas.Settings exposing (..)
 import Color exposing (..)
 import Html exposing (Html)
 import Html.Attributes exposing (style)
+import List exposing (drop)
+import Array exposing (empty)
 
 -- PORTS
 port sendMessage : String -> Cmd msg
@@ -37,13 +39,22 @@ type alias Model =
     points: List (Float, Float),
     isDrawing: Bool,
     username: String,
-    word: String
+    word: String,
+    isDrawer: Bool,
+    curentDrawer: String
   }
-
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { points = [], isDrawing = False, username = "", isInit = True, word = ""}, Cmd.none
+  ( { 
+    points = [], 
+    isDrawing = False, 
+    username = "", 
+    isInit = True,
+    isDrawer = False,
+    word = "",
+    curentDrawer = ""
+    }, Cmd.none
   )
 
 
@@ -72,17 +83,23 @@ update msg model =
         ({ model | points = (x, y) :: model.points }, sendMessage ("D:" ++ toString x ++ "," ++ toString y))
       else
         ( model, Cmd.none )
+
     ReceiveWS m ->
       if String.startsWith "D:" m then
         ({model | points = convertToPoint (String.dropLeft 2 m) :: model.points}, Cmd.none)
       else if String.startsWith "C:" m then
         ({model | word = String.dropLeft 2 m}, Cmd.none)
+      else if String.startsWith "E:" m then
+        ({model | isDrawer = model.username == String.dropLeft 2 m, curentDrawer = String.dropLeft 2 m}, Cmd.none)
       else
         (model, Cmd.none)
+
     SendWS m ->
       (model, sendMessage m)
+
     UpdateUsername m ->
       ({model | username = m}, Cmd.none)
+
     JoinGame ->
       ({ model | isInit = False }, sendMessage model.username)
       
@@ -133,12 +150,15 @@ viewDrawScreen model = div [ class "container"] [
   ]
 
 viewDrawCanvas : Model -> Html Msg
-viewDrawCanvas model = Canvas.toHtml (500, 500)
+viewDrawCanvas model = div [ style "position" "relative"] [
+  viewCurrentDrawerBadge model
+  , Canvas.toHtml (500, 500)
             [ class "shadow-box", 
             onMouseDown StartDrawing, 
             onMouseUp StopDrawing, 
             onMouseMove]
             [ shapes [ fill Color.red ] (List.map (\(x, y) -> rect (x, y) 4 4) model.points) ]
+  ]
 
 viewInitScreen : Model -> Html Msg
 viewInitScreen model = div [ class "container"] [
@@ -156,12 +176,20 @@ viewControls model = div [ class "controls-container" ] [
         , span [ class "name-display", style "margin-bottom" "20px" ] [ text model.username ]
         , label [] [ text "Role" ]
         , div [ class "role-display" ] [
-          span [ class "active "] [ text "Drawer" ]
-          , span [] [ text "Guesser" ]
+          span [ class (if model.isDrawer then "active" else "")] [ text "Drawer" ]
+          , span [ class (if not model.isDrawer then "active" else "")] [ text "Guesser" ]
         ]
         , label [] [ text "Word" ]
         , span [ class "word-display" ] [ text model.word ]
        ]
+
+viewCurrentDrawerBadge : Model -> Html Msg
+viewCurrentDrawerBadge model =
+  -- only show badge if drawer is set
+  div [ class "drawer-badge", style "display" (if not model.isDrawer && not (model.curentDrawer == "") then "inline-block" else "none") ] [
+    span [ class "drawer-name" ] [ text model.curentDrawer ]
+    , text " is drawing"
+  ]
       
 onMouseMove : Attribute Msg
 onMouseMove =

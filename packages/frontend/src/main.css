@@ -61,7 +61,6 @@ input {
   padding: 20px;
   border-radius: 20px;
   background-color: white;
-
   box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
 }
 
@@ -87,7 +86,7 @@ input {
   overflow: hidden;
   border: 1px solid #9fd3c7;
   margin-bottom: 20px;
-  width: 150px;
+  width: 148px;
 }
 
   .role-display span {
@@ -119,4 +118,33 @@ input {
 
   .init-screen * {
     font-size: 18px;
+  }
+
+.drawer-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #385170;
+  color: white;
+  border-radius: 30px;
+  margin: 15px;
+  padding: 8px;
+  font-size: 13px;
+  animation: pulse 2s infinite;
+}
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .drawer-name {
+    font-weight: bold;
   }
