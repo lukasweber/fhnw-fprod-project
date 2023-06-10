@@ -36,13 +36,14 @@ type alias Model =
     isInit : Bool,
     points: List (Float, Float),
     isDrawing: Bool,
-    username: String
+    username: String,
+    word: String
   }
 
 
 init : () -> ( Model, Cmd Msg )
 init flags =
-  ( { points = [], isDrawing = False, username = "", isInit = True}, Cmd.none
+  ( { points = [], isDrawing = False, username = "", isInit = True, word = ""}, Cmd.none
   )
 
 
@@ -74,6 +75,8 @@ update msg model =
     ReceiveWS m ->
       if String.startsWith "D:" m then
         ({model | points = convertToPoint (String.dropLeft 2 m) :: model.points}, Cmd.none)
+      else if String.startsWith "C:" m then
+        ({model | word = String.dropLeft 2 m}, Cmd.none)
       else
         (model, Cmd.none)
     SendWS m ->
@@ -157,7 +160,7 @@ viewControls model = div [ class "controls-container" ] [
           , span [] [ text "Guesser" ]
         ]
         , label [] [ text "Word" ]
-        , span [ class "word-display" ] [ text "Cat" ]
+        , span [ class "word-display" ] [ text model.word ]
        ]
       
 onMouseMove : Attribute Msg

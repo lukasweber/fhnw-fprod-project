@@ -75,7 +75,9 @@ library
         warp ^>= 3.3.25, 
         wai ^>= 3.2.3,
         wai-websockets ^>= 3.0.1.2,
-        text ^>= 1.2.5.0
+        text ^>= 1.2.5.0,
+        random ^>= 1.2.1.1,
+        MonadRandom ^>= 0.6
 
     -- Directories containing source files.
     hs-source-dirs:   src
