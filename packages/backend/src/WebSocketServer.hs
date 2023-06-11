@@ -11,7 +11,6 @@ import qualified Network.WebSockets as WS
 import qualified Data.Text as T
 import Control.Monad (when)
 
-
 type Client = (Text, WS.Connection)
 data ServerState = ServerState
   { clients :: [Client]
@@ -49,7 +48,7 @@ newRound st = do
   broadcast (createMessage Clear "") st
   broadcast (createMessage ElectedUser (fst electedUser)) st
   WS.sendTextData (snd electedUser) (createMessage ChooseWord word)
-  return st { currentWord = word }
+  return st { currentWord = word, drawer = electedUser }
 
 newServerState :: ServerState
 newServerState = ServerState [] "" ("", undefined)
