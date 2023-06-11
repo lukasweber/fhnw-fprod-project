@@ -9,6 +9,7 @@ import Control.Monad.Random
 import System.Random()
 import qualified Network.WebSockets as WS
 import qualified Data.Text as T
+import Control.Monad (when)
 
 
 type Client = (Text, WS.Connection)
@@ -20,7 +21,7 @@ data ServerState = ServerState
 
 type Point = (Int, Int)
 type Points = [Point]
-data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers | Victory deriving (Eq,Ord,Enum,Show)
+data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers | Victory | Clear deriving (Eq,Ord,Enum,Show)
 
 possibleWords :: [Text]
 possibleWords = ["apple", "banana", "orange", "pear", "grape", "pineapple", "strawberry", "blueberry", "raspberry", "blackberry", "mango", "watermelon", "melon", "cherry", "peach", "plum", "kiwi", "lemon", "lime", "coconut", "papaya", "apricot", "avocado", "fig", "grapefruit", "guava", "lychee", "nectarine", "olive", "pomegranate", "tangerine", "tomato", "cantaloupe", "dragonfruit", "durian", "jackfruit", "kumquat", "mangosteen", "persimmon", "quince", "rhubarb", "starfruit", "ugli fruit", "breadfruit", "carambola", "cherimoya", "custard apple", "date", "elderberry", "goji berry", "gooseberry", "honeydew", "loquat", "mulberry", "passion fruit", "plantain", "pomelo", "prickly pear", "quandong", "salak", "soursop", "tamarind", "ugni", "yuzu", "zucchini"]
@@ -45,6 +46,7 @@ newRound :: ServerState -> IO ServerState
 newRound st = do
   word <- chooseWord
   electedUser <- electDrawer st
+  broadcast (createMessage Clear "") st
   broadcast (createMessage ElectedUser (fst electedUser)) st
   WS.sendTextData (snd electedUser) (createMessage ChooseWord word)
   return st { currentWord = word }
@@ -78,9 +80,6 @@ application st pending = do
       msg <- WS.receiveData conn
       let client = (msg, conn)
 
-      -- The first message that we expect from a client is their name.
-      -- After the first contact, we start listening for delta updates
-      -- to the canvas.
       readMVar st >>= broadcast (createMessage JoinGame (fst client))
       modifyMVar_ st $ \s -> return $ addClient client s
 
@@ -103,17 +102,19 @@ talk :: Client -> MVar ServerState -> IO ()
 talk (username, conn) st = forever $ do
     msg <- WS.receiveData conn
 
-    -- when draw message, broadcast to all clients
     when ("D:" `isPrefixOf` Protolude.toS msg) $ do
-      readMVar st >>= broadcast msg
+      readMVar st >>= \s -> do
+        Control.Monad.when (username == fst (drawer s)) $ broadcast msg s
 
-    -- check if guess matches with current word
+    when ("C:" `isPrefixOf` Protolude.toS msg) $ do
+      readMVar st >>= \s -> do
+        Control.Monad.when (username == fst (drawer s)) $ broadcast msg s
+
     when ("G:" `isPrefixOf` Protolude.toS msg) $
       modifyMVar_ st $ \s -> do
-        putStrLn (createMessage WordGuess (currentWord s))
         if msg == createMessage WordGuess (currentWord s)
           then do
-            putStrLn msg
+            broadcast (createMessage Victory username) s
             newRound s
           else return s
 
@@ -129,3 +130,4 @@ getMessageTypeShort WordGuess = "G"
 getMessageTypeShort ElectedUser = "E"
 getMessageTypeShort CurrentUsers = "U"
 getMessageTypeShort Victory = "V"
+getMessageTypeShort Clear = "C"
