@@ -12,15 +12,177 @@
 body {
   font-family: 'Source Sans Pro', 'Trebuchet MS', 'Lucida Grande', 'Bitstream Vera Sans', 'Helvetica Neue', sans-serif;
   margin: 0;
-  text-align: center;
   color: #293c4b;
+  background-color: #f0f0f0cc;
 }
 
-h1 {
-  font-size: 30px;
+.logo {
+  font-size: 40px;
+  font-weight: 100;
+  margin: 50px;
+  text-align: center;
 }
 
-img {
-  margin: 20px 0;
+input {
+  background-color: white;
+  border: 1px solid #9fd3c7;
+  border-radius: 20px;
+  padding: 10px;
+}
+
+.btn {
+  background-color: #385170;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 10px;
+  cursor: pointer;
+}
+
+.btn[disabled] {
+  background: none;
+  background-color: #ececec;
+  color: #385170;
+  cursor: not-allowed;
+}
+
+.container {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
+.shadow-box {
+  height: 500px;
+  width: 500px;
+  display: inline-block;
+  padding: 20px;
+  border-radius: 20px;
+  background-color: white;
+  box-shadow: rgba(100, 100, 111, 0.2) 0px 7px 29px 0px;
+}
+
+.colored-box {
+  background-color: #9fd3c7;
+}
+
+.controls-container {
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  width: 200px;
+}
+
+  .controls-container label {
+    display: block;
+    margin: 10px 0px;
+    font-weight: bold;
+  } 
+
+.role-display {
+  border-radius: 20px;
+  overflow: hidden;
+  border: 1px solid #9fd3c7;
+  margin-bottom: 20px;
+  width: 148px;
+}
+
+  .role-display span {
+    padding: 10px;
+    display: inline-block;
+  }
+
+  .role-display span.active {
+    background-color: #9fd3c7;
+    color: white;
+  }
+
+.word-display {
+  font-size: 60px;
+}
+
+.init-screen {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  row-gap: 20px;
+}
+
+  .init-screen h1 {
+    font-size: 40px;
+    font-weight: 100;;
+  }
+
+  .init-screen * {
+    font-size: 18px;
+  }
+
+.drawer-badge {
+  position: absolute;
+  top: 0;
+  left: 0;
+  background-color: #385170;
+  color: white;
+  border-radius: 30px;
+  margin: 15px;
+  padding: 8px;
+  font-size: 13px;
+  animation: pulse 2s infinite;
+}
+
+  @keyframes pulse {
+    0% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+    100% {
+      transform: scale(1);
+    }
+  }
+
+  .drawer-name {
+    font-weight: bold;
+  }
+
+.member-list {
+  display: flex;
+  flex-direction: row;
+  gap: 10px;
+  margin-bottom: 20px;
   max-width: 200px;
+  flex-wrap: wrap;
+}
+
+.member-list span {
+  background-color: #385170;
+  color: white;
+  border-radius: 30px;
+  padding: 8px;
+}
+
+.guess-input-container {
+  text-align: center;
+}
+
+.canvas {
+  display: grid;
+  row-gap: 1rem;
+}
+
+
+.clear-canvas-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #385170;
+  color: white;
+  border-radius: 30px;
+  margin: 15px;
+  padding: 8px;
+  font-size: 13px;
 }
