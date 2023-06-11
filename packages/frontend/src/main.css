@@ -173,3 +173,16 @@ input {
   display: grid;
   row-gap: 1rem;
 }
+
+
+.clear-canvas-badge {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  background-color: #385170;
+  color: white;
+  border-radius: 30px;
+  margin: 15px;
+  padding: 8px;
+  font-size: 13px;
+}

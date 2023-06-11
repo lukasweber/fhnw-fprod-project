@@ -23,7 +23,20 @@ type Points = [Point]
 data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers | Victory | Reset deriving (Eq,Ord,Enum,Show)
 
 possibleWords :: [Text]
-possibleWords = ["apple", "banana", "orange", "pear", "grape", "pineapple", "strawberry", "blueberry", "raspberry", "blackberry", "mango", "watermelon", "melon", "cherry", "peach", "plum", "kiwi", "lemon", "lime", "coconut", "papaya", "apricot", "avocado", "fig", "grapefruit", "guava", "lychee", "nectarine", "olive", "pomegranate", "tangerine", "tomato", "cantaloupe", "dragonfruit", "durian", "jackfruit", "kumquat", "mangosteen", "persimmon", "quince", "rhubarb", "starfruit", "ugli fruit", "breadfruit", "carambola", "cherimoya", "custard apple", "date", "elderberry", "goji berry", "gooseberry", "honeydew", "loquat", "mulberry", "passion fruit", "plantain", "pomelo", "prickly pear", "quandong", "salak", "soursop", "tamarind", "ugni", "yuzu", "zucchini"]
+possibleWords = [
+  "computer",
+  "printer",
+  "phone",
+  "building",
+  "house",
+  "table",
+  "chair",
+  "desk",
+  "lamp",
+  "pen",
+  "pencil",
+  "paper",
+  "notebook"]
 
 chooseWord :: (MonadRandom m) => m Text
 chooseWord = do
@@ -45,7 +58,7 @@ newRound :: ServerState -> IO ServerState
 newRound st = do
   word <- chooseWord
   electedUser <- electDrawer st
-  broadcast (createMessage Clear "") st
+  broadcast (createMessage Reset "") st
   broadcast (createMessage ElectedUser (fst electedUser)) st
   WS.sendTextData (snd electedUser) (createMessage ChooseWord word)
   return st { currentWord = word, drawer = electedUser }

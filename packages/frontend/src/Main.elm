@@ -50,6 +50,8 @@ type alias Model =
     , isDrawer : Bool
     , curentDrawer : String
     , guess : String
+    , showVictoryScreen : Bool
+    , winnerUsername : String
     }
 
 
@@ -64,6 +66,8 @@ init flags =
       , word = ""
       , curentDrawer = ""
       , guess = ""
+      , showVictoryScreen = False
+      , winnerUsername = ""
       }
     , Cmd.none
     )
@@ -83,6 +87,7 @@ type Msg
     | JoinGame
     | GuessWord
     | UpdateGuessWord String
+    | PlayAgain
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
@@ -120,6 +125,12 @@ update msg model =
             else if String.startsWith "L:" m then
                 ( { model | memberList = List.filter (\x -> x /= String.dropLeft 2 m) model.memberList }, Cmd.none )
 
+            else if String.startsWith "V:" m then
+                ( { model | showVictoryScreen = True, winnerUsername = String.dropLeft 2 m }, Cmd.none )
+
+            else if String.startsWith "R:" m then
+                ( { model | points = [] }, Cmd.none )
+
             else
                 ( model, Cmd.none )
 
@@ -137,6 +148,9 @@ update msg model =
 
         GuessWord ->
             ( model, sendMessage ("G:" ++ model.guess) )
+
+        PlayAgain ->
+            ( { model | showVictoryScreen = False }, Cmd.none )
 
 
 convertToPoint : String -> ( Float, Float )
@@ -182,6 +196,9 @@ view model =
         , if model.isInit then
             viewInitScreen model
 
+          else if model.showVictoryScreen then
+            viewVictoryScreen model.winnerUsername
+
           else
             viewDrawScreen model
         ]
@@ -198,8 +215,8 @@ viewDrawScreen model =
 viewDrawCanvas : Model -> Html Msg
 viewDrawCanvas model =
     div [ style "position" "relative", class "canvas" ]
-        [ viewCurrentDrawerBadge model
-        , div []
+        ([ viewCurrentDrawerBadge model
+         , div []
             [ Canvas.toHtml ( 500, 500 )
                 ([ class "shadow-box"
                  , onMouseDown StartDrawing
@@ -214,8 +231,16 @@ viewDrawCanvas model =
                 )
                 [ shapes [ fill Color.red ] (List.map (\( x, y ) -> rect ( x, y ) 4 4) model.points) ]
             ]
-        , viewGuessInput model
-        ]
+         , viewGuessInput model
+         ]
+            ++ (if model.isDrawer then
+                    -- [ viewClearButton ]
+                    []
+
+                else
+                    []
+               )
+        )
 
 
 viewInitScreen : Model -> Html Msg
@@ -228,6 +253,20 @@ viewInitScreen model =
             , button [ onClick JoinGame, class "btn", disabled (model.username == "") ] [ text "Start" ]
             ]
         ]
+
+
+viewVictoryScreen : String -> Html Msg
+viewVictoryScreen winnerUsername =
+    div [ class "container" ]
+        [ div [ class "shadow-box colored-box init-screen", style "text-align" "center" ]
+            [ h1 []
+                [ text (winnerUsername ++ " won!")
+                , br [] []
+                , button [ onClick PlayAgain, class "btn" ] [ text "Play again" ]
+                ]
+            ]
+        ]
+
 
 viewControls : Model -> Html Msg
 viewControls model =
@@ -273,7 +312,17 @@ viewControls model =
                 ]
                 [ text "Guesser" ]
             ]
-        , label [] [ text "Word" ]
+        , label
+            -- TODO: Make nicer
+            [ style "display"
+                (if model.isDrawer then
+                    "inline-block"
+
+                 else
+                    "none"
+                )
+            ]
+            [ text "Word" ]
         , span [ class "word-display" ] [ text model.word ]
         ]
 
@@ -294,6 +343,7 @@ viewCurrentDrawerBadge model =
         , text " is drawing"
         ]
 
+
 viewGuessInput : Model -> Html Msg
 viewGuessInput model =
     div
@@ -309,6 +359,11 @@ viewGuessInput model =
         [ input [ type_ "text", placeholder "Enter your guess", onInput UpdateGuessWord, style "margin-right" "10px" ] []
         , button [ onClick GuessWord, class "btn", disabled (model.username == "") ] [ text "Guess" ]
         ]
+
+
+viewClearButton : Html Msg
+viewClearButton =
+    div [ class "clear-canvas-badge", onClick (SendWS "R:") ] [ text "Clear" ]
 
 
 onMouseMove : Attribute Msg
