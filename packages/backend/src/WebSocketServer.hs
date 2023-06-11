@@ -84,7 +84,7 @@ application st pending = do
       readMVar st >>= broadcast (createMessage JoinGame (fst client))
       modifyMVar_ st $ \s -> return $ addClient client s
 
-      readMVar st >>= \s -> do
+      modifyMVar_ st $ \s -> do
         let users = filter ((/= fst client) . fst) (clients s)
         let usernames = map fst users
 
@@ -110,8 +110,10 @@ talk (username, conn) st = forever $ do
     -- check if guess matches with current word
     when ("G:" `isPrefixOf` Protolude.toS msg) $
       modifyMVar_ st $ \s -> do
-        if Protolude.toS msg == createMessage WordGuess (currentWord s)
+        putStrLn (createMessage WordGuess (currentWord s))
+        if msg == createMessage WordGuess (currentWord s)
           then do
+            putStrLn msg
             newRound s
           else return s
 

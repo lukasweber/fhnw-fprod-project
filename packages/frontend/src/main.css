@@ -158,9 +158,18 @@ input {
   flex-wrap: wrap;
 }
 
-  .member-list span {
-    background-color: #385170;
-    color: white;
-    border-radius: 30px;
-    padding: 8px;
-  }
+.member-list span {
+  background-color: #385170;
+  color: white;
+  border-radius: 30px;
+  padding: 8px;
+}
+
+.guess-input-container {
+  text-align: center;
+}
+
+.canvas {
+  display: grid;
+  row-gap: 1rem;
+}
