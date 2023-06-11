@@ -35,7 +35,7 @@ license:            MIT
 license-file:       LICENSE
 
 -- The package author(s).
-author:             Philipp Hausmann
+author:             Yannick Huggler, Lukas Weber
 
 -- An email address to which users can send suggestions, bug reports, and patches.
 maintainer:         test@asdfsdfsadfasdf.asdfdsaf
@@ -58,10 +58,10 @@ library
     import:           warnings
 
     -- Modules exported by the library.
-    exposed-modules:  ThursdayPainter, WebSocketServer
+    exposed-modules:  ThursdayPainter
 
     -- Modules included in this library but not exported.
-    -- other-modules:
+    other-modules:    Server, Messages, WebSocket
 
     -- LANGUAGE extensions used by modules in this package.
     -- other-extensions:
@@ -70,7 +70,6 @@ library
     build-depends:
         base ^>=4.15.1.0, 
         protolude ^>= 0.3.0,
-        scotty ^>= 0.12.1, 
         websockets ^>= 0.12.7.3, 
         warp ^>= 3.3.25, 
         wai ^>= 3.2.3,

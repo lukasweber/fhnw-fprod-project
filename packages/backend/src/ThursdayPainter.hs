@@ -6,9 +6,10 @@ module ThursdayPainter where
 
 import Protolude
 import qualified Network.WebSockets as WS
-import qualified WebSocketServer
+import qualified Server
+import qualified WebSocket
 
 main :: IO ()
 main = do
-  st <- newMVar WebSocketServer.newServerState
-  WS.runServer "127.0.0.1" 3000 $ WebSocketServer.application st
+  st <- newMVar WebSocket.newServerState
+  WS.runServer "127.0.0.1" 3000 $ Server.application st
