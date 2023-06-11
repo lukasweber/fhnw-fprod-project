@@ -20,7 +20,7 @@ data ServerState = ServerState
 
 type Point = (Int, Int)
 type Points = [Point]
-data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers | Victory | Clear deriving (Eq,Ord,Enum,Show)
+data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers | Victory | Reset deriving (Eq,Ord,Enum,Show)
 
 possibleWords :: [Text]
 possibleWords = ["apple", "banana", "orange", "pear", "grape", "pineapple", "strawberry", "blueberry", "raspberry", "blackberry", "mango", "watermelon", "melon", "cherry", "peach", "plum", "kiwi", "lemon", "lime", "coconut", "papaya", "apricot", "avocado", "fig", "grapefruit", "guava", "lychee", "nectarine", "olive", "pomegranate", "tangerine", "tomato", "cantaloupe", "dragonfruit", "durian", "jackfruit", "kumquat", "mangosteen", "persimmon", "quince", "rhubarb", "starfruit", "ugli fruit", "breadfruit", "carambola", "cherimoya", "custard apple", "date", "elderberry", "goji berry", "gooseberry", "honeydew", "loquat", "mulberry", "passion fruit", "plantain", "pomelo", "prickly pear", "quandong", "salak", "soursop", "tamarind", "ugni", "yuzu", "zucchini"]
@@ -105,13 +105,13 @@ talk (username, conn) st = forever $ do
       readMVar st >>= \s -> do
         Control.Monad.when (username == fst (drawer s)) $ broadcast msg s
 
-    when ("C:" `isPrefixOf` Protolude.toS msg) $ do
+    when ("R:" `isPrefixOf` Protolude.toS msg) $ do
       readMVar st >>= \s -> do
         Control.Monad.when (username == fst (drawer s)) $ broadcast msg s
 
     when ("G:" `isPrefixOf` Protolude.toS msg) $
       modifyMVar_ st $ \s -> do
-        if msg == createMessage WordGuess (currentWord s)
+        if username /= fst (drawer s) && msg == createMessage WordGuess (currentWord s)
           then do
             broadcast (createMessage Victory username) s
             newRound s
@@ -129,4 +129,4 @@ getMessageTypeShort WordGuess = "G"
 getMessageTypeShort ElectedUser = "E"
 getMessageTypeShort CurrentUsers = "U"
 getMessageTypeShort Victory = "V"
-getMessageTypeShort Clear = "C"
+getMessageTypeShort Reset = "R"
