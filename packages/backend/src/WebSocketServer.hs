@@ -20,7 +20,7 @@ data ServerState = ServerState
 
 type Point = (Int, Int)
 type Points = [Point]
-data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers deriving (Eq,Ord,Enum,Show)
+data MessageType = JoinGame | LeftGame | Draw | WordGuess | ElectedUser | ChooseWord | CurrentUsers | Victory deriving (Eq,Ord,Enum,Show)
 
 possibleWords :: [Text]
 possibleWords = ["apple", "banana", "orange", "pear", "grape", "pineapple", "strawberry", "blueberry", "raspberry", "blackberry", "mango", "watermelon", "melon", "cherry", "peach", "plum", "kiwi", "lemon", "lime", "coconut", "papaya", "apricot", "avocado", "fig", "grapefruit", "guava", "lychee", "nectarine", "olive", "pomegranate", "tangerine", "tomato", "cantaloupe", "dragonfruit", "durian", "jackfruit", "kumquat", "mangosteen", "persimmon", "quince", "rhubarb", "starfruit", "ugli fruit", "breadfruit", "carambola", "cherimoya", "custard apple", "date", "elderberry", "goji berry", "gooseberry", "honeydew", "loquat", "mulberry", "passion fruit", "plantain", "pomelo", "prickly pear", "quandong", "salak", "soursop", "tamarind", "ugni", "yuzu", "zucchini"]
@@ -40,6 +40,14 @@ electDrawer st = do
   case drop i (clients st) of
     (x:_) -> return x
     []    -> return ("", undefined)
+
+newRound :: ServerState -> IO ServerState
+newRound st = do
+  word <- chooseWord
+  electedUser <- electDrawer st
+  broadcast (createMessage ElectedUser (fst electedUser)) st
+  WS.sendTextData (snd electedUser) (createMessage ChooseWord word)
+  return st { currentWord = word }
 
 newServerState :: ServerState
 newServerState = ServerState [] "" ("", undefined)
@@ -65,14 +73,6 @@ broadcast message st = do
 -- Main entry point for the socket server
 application :: MVar ServerState -> WS.ServerApp
 application st pending = do
-  -- Set currentWord to server state if it is empty
-  modifyMVar_ st $ \s -> do
-    if currentWord s == ""
-      then do
-        word <- chooseWord
-        return s { currentWord = word }
-      else return s
-
   conn <- WS.acceptRequest pending
   WS.withPingThread conn 30 (return ()) $ do
       msg <- WS.receiveData conn
@@ -91,11 +91,10 @@ application st pending = do
         unless (null usernames) $ do
           WS.sendTextData conn (createMessage CurrentUsers (T.intercalate "," usernames))
 
-        when (numClients s >= 2) $ do
-          electedUser <- electDrawer s
-          broadcast (createMessage ElectedUser (fst electedUser)) s
-          WS.sendTextData (snd electedUser) (createMessage ChooseWord (currentWord s))
-      
+        if numClients s > 1
+          then newRound s
+          else return s
+
       talk client st `finally` do
         readMVar st >>= broadcast (createMessage LeftGame (fst client))
         modifyMVar_ st $ \s -> return $ removeClient client s
@@ -113,8 +112,7 @@ talk (username, conn) st = forever $ do
       modifyMVar_ st $ \s -> do
         if Protolude.toS msg == createMessage WordGuess (currentWord s)
           then do
-            broadcast (createMessage ElectedUser username) s
-            return s { currentWord = "" }
+            newRound s
           else return s
 
 createMessage :: MessageType -> Text -> Text
@@ -128,3 +126,4 @@ getMessageTypeShort ChooseWord = "C"
 getMessageTypeShort WordGuess = "G"
 getMessageTypeShort ElectedUser = "E"
 getMessageTypeShort CurrentUsers = "U"
+getMessageTypeShort Victory = "V"
